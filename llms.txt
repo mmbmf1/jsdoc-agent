@@ -1,0 +1,18 @@
+# JSDoc Expert Agent
+
+This project is a specification-first system for mastering and enforcing JSDoc standards.
+
+## Project Structure
+- /content: Atomic Markdown pillars (The Specs).
+- /agent/rules: Automated guardrails for code documentation.
+- /agent/skills: Playbooks for reasoning workflows.
+- /mcp/tools: MCP server tools for external code interaction.
+
+## Core Pillars
+1. Tags: Documentation of all JSDoc tags.
+2. Types: Type definition standards.
+3. Modules: Module and export conventions.
+4. Generics: Template usage standards.
+
+## Agent Instructions
+When assisting with JSDoc, prioritize the content found in /content, validate against /agent/rules, and follow the workflows defined in /agent/skills.
