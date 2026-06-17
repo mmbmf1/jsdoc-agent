@@ -7,18 +7,21 @@ category: core
 # @throws
 
 ## Concept
+
 The `@throws` tag documents the exceptions that a function may throw.
 
 ## Implementation
+
 ```javascript
 /**
  * @throws {Error} If the input is negative.
  */
 function process(input) {
-  if (input < 0) throw new Error("Negative input");
+  if (input < 0) throw new Error('Negative input')
 }
+```
 
-Checklist
+## Checklist
 
     [ ] Is the error type (e.g., Error, TypeError) specified?
 

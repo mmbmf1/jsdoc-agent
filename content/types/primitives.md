@@ -7,9 +7,11 @@ category: types
 # Primitives
 
 ## Concept
+
 Primitive types represent the most basic building blocks of the data in our system. Standardizing these prevents ambiguity.
 
 ## Implementation
+
 ```javascript
 /**
  * @param {string} name - The user's name.
@@ -17,8 +19,9 @@ Primitive types represent the most basic building blocks of the data in our syst
  * @param {boolean} isActive - Whether the account is active.
  * @param {Array<string>} tags - A list of categories.
  */
+```
 
-Checklist
+## Checklist
 
     [ ] Are primitive types lowercase (e.g., string, not String)?
 

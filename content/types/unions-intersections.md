@@ -7,9 +7,11 @@ category: types
 # Union and Intersection Types
 
 ## Concept
+
 Union types (`|`) define a variable that can accept multiple distinct types. Intersection types (`&`) create a new type by combining all members of existing types. These are essential for creating flexible, robust API definitions.
 
 ## Implementation
+
 ```javascript
 /**
  * Union: A parameter that can be a string ID or a numeric ID.
@@ -17,8 +19,9 @@ Union types (`|`) define a variable that can accept multiple distinct types. Int
  * * Intersection: A session combining User data with Admin permissions.
  * @typedef {User & Admin} AdminSession
  */
+```
 
-Checklist
+## Checklist
 
     [ ] Are Union types correctly using the pipe operator (|)?
 

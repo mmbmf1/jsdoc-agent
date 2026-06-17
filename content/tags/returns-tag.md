@@ -7,18 +7,21 @@ category: core
 # @returns
 
 ## Concept
+
 The `@returns` tag specifies the return type and description for a function.
 
 ## Implementation
+
 ```javascript
 /**
  * @returns {number} The sum of the two numbers.
  */
 function add(a, b) {
-  return a + b;
+  return a + b
 }
+```
 
-Checklist
+## Checklist
 
     [ ] Is the return type explicitly defined in curly braces?
 

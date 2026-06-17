@@ -7,9 +7,11 @@ category: core
 # @deprecated
 
 ## Concept
+
 The `@deprecated` tag indicates that the documented code should no longer be used and will be removed in future versions.
 
 ## Implementation
+
 ```javascript
 /**
  * @deprecated Use `newFunction()` instead.
@@ -17,8 +19,9 @@ The `@deprecated` tag indicates that the documented code should no longer be use
 function oldFunction() {
   // ...
 }
+```
 
-Checklist
+## Checklist
 
     [ ] Is there a clear reason for the deprecation?
 
