@@ -1,4 +1,4 @@
-# Skill: Schema Audit
+# Skill: Spec Compliance 
 
 ## Purpose
 To evaluate a codebase against JSDoc standards and generate a structured compliance report.
