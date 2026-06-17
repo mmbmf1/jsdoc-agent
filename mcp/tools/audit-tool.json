@@ -1,0 +1,14 @@
+{
+  "name": "jsdoc_audit",
+  "description": "Scans a file for JSDoc compliance using /agent/rules/docs-completeness.md and /agent/skills/spec-compliance-skill.md",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filePath": {
+        "type": "string",
+        "description": "The path to the source file to audit (e.g., src/utils/math.js)"
+      }
+    },
+    "required": ["filePath"]
+  }
+}
