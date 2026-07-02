@@ -35,8 +35,9 @@ flowchart TB
 | [`content/`](content/) | Atomic Markdown specs organized by pillar |
 | [`agent/rules/`](agent/rules/) | Hard requirements agents must enforce |
 | [`agent/skills/`](agent/skills/) | Step-by-step audit and report workflows |
-| [`mcp/`](mcp/) | Node MCP server exposing audit and scan tools |
-| [`package.json`](package.json) | Root-level Node dependencies (MCP SDK, zod) |
+| [`mcp/`](mcp/) | Node MCP server and deterministic audit engine |
+| [`mcp/audit/`](mcp/audit/) | AST parsing, completeness rules, and report formatting |
+| [`package.json`](package.json) | Root-level Node dependencies (MCP SDK, Babel parser, zod) |
 | [`llms.txt`](llms.txt) | Machine-readable project index for LLM context |
 
 ### Intentional layout
@@ -45,7 +46,7 @@ This repo is a standards and MCP package, not a conventional application. It doe
 
 | Typical pattern | This repo |
 | --- | --- |
-| `src/` / `lib/` application code | [`mcp/server.js`](mcp/server.js) — thin runtime glue only |
+| `src/` / `lib/` application code | [`mcp/server.js`](mcp/server.js) + [`mcp/audit/`](mcp/audit/) — MCP glue and deterministic audit engine |
 | Domain/business logic | [`content/`](content/) — atomic JSDoc specs |
 | Config / policy | [`agent/rules/`](agent/rules/) — hard requirements |
 | Workflows / use cases | [`agent/skills/`](agent/skills/) — audit playbooks |
@@ -102,10 +103,37 @@ Both tools are registered inline in [`mcp/server.js`](mcp/server.js). There is n
 
 | Tool | Input | What it does |
 | --- | --- | --- |
-| `jsdoc_audit` | `filePath` (absolute) | Reads the target file, [`docs-completeness.md`](agent/rules/docs-completeness.md), and [`spec-compliance-skill.md`](agent/skills/spec-compliance-skill.md), then returns a prompt bundle for the connected agent to perform the audit |
-| `find_files_needing_docs` | `directory` (absolute or `~/...`) | Recursively scans `.js` and `.ts` files (skips `node_modules`, `.git`) and lists files missing a file-level `/** ... */` header in the first 5 lines |
+| `jsdoc_audit` | `filePath` (absolute), `suggestFixes` (optional, default `true`) | Parses the file with AST checks, returns a deterministic JSON compliance report and markdown table, and only includes rule/workflow context for LLM fix suggestions when failures exist |
+| `find_files_needing_docs` | `directory` (absolute or `~/...`) | Recursively scans `.js` and `.ts` files (skips `node_modules`, `.git`) and lists files missing a described file-level JSDoc block |
 
-`jsdoc_audit` delegates reasoning to the connected LLM — it does not parse AST or auto-score compliance on its own.
+`jsdoc_audit` scores compliance deterministically via [`mcp/audit/`](mcp/audit/). The connected LLM is optional and limited to suggesting fixes for symbols already flagged by the engine.
+
+Example `jsdoc_audit` response shape:
+
+```text
+--- AUDIT REPORT (JSON) ---
+{
+  "file": "/path/to/file.js",
+  "summary": { "total": 2, "pass": 1, "fail": 1 },
+  "results": [
+    {
+      "symbol": "increment",
+      "kind": "function",
+      "line": 12,
+      "status": "fail",
+      "missing": ["Missing @param for \"value\""],
+      "ruleIds": ["param-coverage"]
+    }
+  ]
+}
+
+--- COMPLIANCE TABLE ---
+| Element | Status | Missing Requirements |
+|---------|--------|----------------------|
+| increment | Incomplete | Missing @param for "value" |
+```
+
+When failures exist and `suggestFixes` is `true`, the tool appends a fix-suggestion context block plus the rule set and audit workflow for the connected agent.
 
 Example prompts:
 
@@ -115,5 +143,6 @@ Example prompts:
 ## Development
 
 - Requires Node.js with ESM support (`"type": "module"` in [`package.json`](package.json)).
+- Run tests with `npm test`.
 - Markdown and JS formatting uses [`.prettierrc`](.prettierrc).
-- To extend the system: add spec files under `content/`, update rules and skills under `agent/`, and register new tools in [`mcp/server.js`](mcp/server.js).
+- To extend the system: add spec files under `content/`, update rules and skills under `agent/`, and extend [`mcp/audit/`](mcp/audit/) or register new tools in [`mcp/server.js`](mcp/server.js).
