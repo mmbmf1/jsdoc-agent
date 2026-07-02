@@ -1,6 +1,6 @@
 # Rule: JSDoc Completeness
 
-Every public function or method must be documented with the following requirements:
+Every public function, method, or class (including constructors and public class methods) must be documented with the following requirements:
 
 1. **Description**: A concise summary of what the function does.
 2. **@param**: Every argument must have a defined type and description.
