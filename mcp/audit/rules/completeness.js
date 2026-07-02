@@ -75,7 +75,7 @@ export function evaluateParams(jsdoc, expectedParams) {
  * @returns {CompletenessFinding[]} Missing or incomplete @returns findings.
  */
 export function evaluateReturns(jsdoc, kind) {
-  if (kind === 'class') {
+  if (kind === 'class' || kind === 'constructor') {
     return []
   }
 

@@ -5,6 +5,9 @@ import { z } from 'zod'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { auditFile } from './audit/index.js'
+import { formatHybridAuditResponse } from './audit/format-response.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const AGENT_DIR = path.resolve(__dirname, '../agent')
@@ -74,27 +77,30 @@ async function findMissingHeaders(scanRoot) {
   return missing
 }
 
-// 1. Initialize the Server
 const server = new McpServer({
   name: 'jsdoc-audit-server',
-  version: '1.0.0',
+  version: '1.1.0',
 })
 
-// 2. Register your 'jsdoc_audit' tool
 server.registerTool(
   'jsdoc_audit',
   {
     description:
-      'Audits JSDoc in a given file using docs-completeness.md (rules) and spec-compliance-skill.md (workflow).',
+      'Deterministically audits JSDoc completeness, then optionally includes LLM fix guidance for failed symbols.',
     inputSchema: {
       filePath: z.string().describe('The absolute path to the file to audit'),
+      suggestFixes: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe(
+          'When true, include rule/workflow context for LLM fix suggestions on failures'
+        ),
     },
   },
-  async ({ filePath }) => {
+  async ({ filePath, suggestFixes = true }) => {
     try {
-      // 1. Read the file requested by the user
-      const targetContent = await fs.readFile(filePath, 'utf-8')
-
+      const report = await auditFile(filePath)
       const [ruleContent, skillContent] = await Promise.all([
         fs.readFile(AGENT_FILES.completeness, 'utf-8'),
         fs.readFile(AGENT_FILES.skill, 'utf-8'),
@@ -104,7 +110,12 @@ server.registerTool(
         content: [
           {
             type: 'text',
-            text: `--- RULE SET ---\n${ruleContent}\n\n--- AUDIT WORKFLOW ---\n${skillContent}\n\n--- TARGET CODE ---\n${targetContent}\n\nPlease audit the Target Code using the Rule Set and Audit Workflow above.`,
+            text: formatHybridAuditResponse(
+              report,
+              ruleContent,
+              skillContent,
+              suggestFixes
+            ),
           },
         ],
       }
@@ -150,7 +161,6 @@ server.registerTool(
   }
 )
 
-// 3. Start the Server
 const transport = new StdioServerTransport()
 await server.connect(transport)
 
