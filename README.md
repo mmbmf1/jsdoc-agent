@@ -39,6 +39,18 @@ flowchart TB
 | [`package.json`](package.json) | Root-level Node dependencies (MCP SDK, zod) |
 | [`llms.txt`](llms.txt) | Machine-readable project index for LLM context |
 
+### Intentional layout
+
+This repo is a standards and MCP package, not a conventional application. It does not use `app/`, `lib/`, `src/`, or `components/` because those patterns do not fit its purpose. Instead:
+
+| Typical pattern | This repo |
+| --- | --- |
+| `src/` / `lib/` application code | [`mcp/server.js`](mcp/server.js) — thin runtime glue only |
+| Domain/business logic | [`content/`](content/) — atomic JSDoc specs |
+| Config / policy | [`agent/rules/`](agent/rules/) — hard requirements |
+| Workflows / use cases | [`agent/skills/`](agent/skills/) — audit playbooks |
+| UI (`app/`, `components/`) | Not applicable — consumed by MCP clients and agents |
+
 ### Content catalog
 
 Specs live under `content/` and are grouped into four pillars:
@@ -53,7 +65,7 @@ Specs live under `content/` and are grouped into four pillars:
 When assisting with JSDoc, agents should:
 
 1. Load guidance from `content/` for tag, type, module, and generic conventions.
-2. Validate against [`agent/rules/docs-completeness.md`](agent/rules/docs-completeness.md) — every public function needs a description, `@param`, `@returns`, and `@throws` where applicable.
+2. Validate against [`agent/rules/docs-completeness.md`](agent/rules/docs-completeness.md) for completeness requirements.
 3. Follow [`agent/skills/spec-compliance-skill.md`](agent/skills/spec-compliance-skill.md) to produce structured compliance reports.
 4. Use the MCP tools below to pull rule sets and scan directories from a connected client.
 
@@ -86,11 +98,11 @@ Any client that supports stdio MCP can connect the same way — point it at `nod
 
 ## MCP tools
 
-Both tools are implemented in [`mcp/server.js`](mcp/server.js).
+Both tools are registered inline in [`mcp/server.js`](mcp/server.js). There is no separate tool schema directory.
 
 | Tool | Input | What it does |
 | --- | --- | --- |
-| `jsdoc_audit` | `filePath` (absolute) | Reads the target file and [`docs-completeness.md`](agent/rules/docs-completeness.md), then returns a prompt bundle for the connected agent to perform the audit |
+| `jsdoc_audit` | `filePath` (absolute) | Reads the target file, [`docs-completeness.md`](agent/rules/docs-completeness.md), and [`spec-compliance-skill.md`](agent/skills/spec-compliance-skill.md), then returns a prompt bundle for the connected agent to perform the audit |
 | `find_files_needing_docs` | `directory` (absolute or `~/...`) | Recursively scans `.js` and `.ts` files (skips `node_modules`, `.git`) and lists files missing a file-level `/** ... */` header in the first 5 lines |
 
 `jsdoc_audit` delegates reasoning to the connected LLM — it does not parse AST or auto-score compliance on its own.

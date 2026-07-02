@@ -7,6 +7,12 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const AGENT_DIR = path.resolve(__dirname, '../agent')
+const AGENT_FILES = {
+  completeness: path.join(AGENT_DIR, 'rules/docs-completeness.md'),
+  skill: path.join(AGENT_DIR, 'skills/spec-compliance-skill.md'),
+}
+
 const SOURCE_FILE = /\.(js|ts)$/
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 
@@ -78,7 +84,8 @@ const server = new McpServer({
 server.registerTool(
   'jsdoc_audit',
   {
-    description: 'Audits JSDoc in a given file against project standards.',
+    description:
+      'Audits JSDoc in a given file using docs-completeness.md (rules) and spec-compliance-skill.md (workflow).',
     inputSchema: {
       filePath: z.string().describe('The absolute path to the file to audit'),
     },
@@ -88,20 +95,16 @@ server.registerTool(
       // 1. Read the file requested by the user
       const targetContent = await fs.readFile(filePath, 'utf-8')
 
-      // 2. Read your rule definition
-      // Make sure this path is correct relative to where you run the server
-      const rulePath = path.resolve(
-        __dirname,
-        '../agent/rules/docs-completeness.md'
-      )
-      const ruleContent = await fs.readFile(rulePath, 'utf-8')
+      const [ruleContent, skillContent] = await Promise.all([
+        fs.readFile(AGENT_FILES.completeness, 'utf-8'),
+        fs.readFile(AGENT_FILES.skill, 'utf-8'),
+      ])
 
-      // 3. For now, let's just confirm we can see both
       return {
         content: [
           {
             type: 'text',
-            text: `--- RULE SET ---\n${ruleContent}\n\n--- TARGET CODE ---\n${targetContent}\n\nPlease audit the Target Code against the Rule Set above.`,
+            text: `--- RULE SET ---\n${ruleContent}\n\n--- AUDIT WORKFLOW ---\n${skillContent}\n\n--- TARGET CODE ---\n${targetContent}\n\nPlease audit the Target Code using the Rule Set and Audit Workflow above.`,
           },
         ],
       }

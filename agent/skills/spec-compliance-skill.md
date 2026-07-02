@@ -6,11 +6,7 @@ To evaluate a codebase against JSDoc standards and generate a structured complia
 ## Execution Flow
 1. **Load Context**: Always load `/agent/rules/docs-completeness.md` to establish the baseline criteria.
 2. **Scan Phase**: Identify all public-facing functions, methods, and classes in the target file.
-3. **Evaluation Phase**: For each identified element, verify:
-   - Does it have a description?
-   - Are all @param types defined?
-   - Is there a @returns tag?
-   - Are potential @throws errors documented?
+3. **Evaluation Phase**: For each identified element, apply every requirement defined in `agent/rules/docs-completeness.md`.
 4. **Reporting**: Output the results in a table format:
    | Element | Status | Missing Requirements |
    |---------|--------|----------------------|
