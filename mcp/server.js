@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/**
+ * MCP stdio server exposing JSDoc audit and directory-scan tools.
+ * @module mcp/server
+ */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
@@ -16,11 +20,23 @@ const AGENT_FILES = {
 const SOURCE_FILE = /\.(js|ts)$/
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 
+/**
+ * Checks whether file content starts with a JSDoc block comment.
+ * @param {string} content - Raw file content to inspect.
+ * @returns {boolean} True if the first five lines contain an opening and closing JSDoc block comment.
+ */
 function hasJSDocHeader(content) {
   const firstLines = content.split('\n', 5).join('\n')
   return firstLines.includes('/**') && firstLines.includes('*/')
 }
 
+/**
+ * Resolves a user-supplied directory path to an absolute, existing directory.
+ * Tries the path as-is, resolved, cwd-relative, and home-relative variants.
+ * @param {string} input - Directory path (absolute, relative, or `~/...`).
+ * @returns {Promise<string>} Absolute path to the resolved directory.
+ * @throws {Error} When no candidate path exists or is a directory.
+ */
 async function resolveDirectory(input) {
   const expanded = input.replace(/^~\//, `${process.env.HOME}/`)
   const candidates = [
@@ -43,6 +59,13 @@ async function resolveDirectory(input) {
   throw new Error(`Directory not found: ${input}`)
 }
 
+/**
+ * Recursively scans a directory tree for `.js`/`.ts` files missing a file-level JSDoc header.
+ * Skips `node_modules` and `.git`.
+ * @param {string} scanRoot - Absolute root directory to scan.
+ * @returns {Promise<string[]>} Relative paths of files missing headers.
+ * @throws {Error} When directory reads fail (e.g. permission denied).
+ */
 async function findMissingHeaders(scanRoot) {
   const missing = []
 
