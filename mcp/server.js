@@ -9,6 +9,7 @@ import { z } from 'zod'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { hasFileLevelJSDoc } from './audit/file-header.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const AGENT_DIR = path.resolve(__dirname, '../agent')
@@ -21,13 +22,13 @@ const SOURCE_FILE = /\.(js|ts)$/
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 
 /**
- * Checks whether file content starts with a JSDoc block comment.
+ * Checks whether a file has a described file-level JSDoc block.
  * @param {string} content - Raw file content to inspect.
- * @returns {boolean} True if the first five lines contain an opening and closing JSDoc block comment.
+ * @param {string} filename - File name used for parser mode selection.
+ * @returns {boolean} True when a described file-level JSDoc block is attached to the file.
  */
-function hasJSDocHeader(content) {
-  const firstLines = content.split('\n', 5).join('\n')
-  return firstLines.includes('/**') && firstLines.includes('*/')
+function hasJSDocHeader(content, filename) {
+  return hasFileLevelJSDoc(content, filename)
 }
 
 /**
@@ -87,7 +88,7 @@ async function findMissingHeaders(scanRoot) {
       }
 
       const content = await fs.readFile(filePath, 'utf-8')
-      if (!hasJSDocHeader(content)) {
+      if (!hasJSDocHeader(content, entry.name)) {
         missing.push(path.relative(scanRoot, filePath))
       }
     }
@@ -144,7 +145,7 @@ server.registerTool(
   'find_files_needing_docs',
   {
     description:
-      'Scans directory for files lacking a proper JSDoc file-level header.',
+      'Scans directory for files lacking a described file-level JSDoc block.',
     inputSchema: z.object({
       directory: z.string().describe('Path to the directory to scan'),
     }),
