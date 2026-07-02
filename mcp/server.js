@@ -7,6 +7,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { auditFile } from './audit/index.js'
 import { formatHybridAuditResponse } from './audit/format-response.js'
+import { hasFileLevelJSDoc } from './audit/file-header.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -19,9 +20,8 @@ const AGENT_FILES = {
 const SOURCE_FILE = /\.(js|ts)$/
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 
-function hasJSDocHeader(content) {
-  const firstLines = content.split('\n', 5).join('\n')
-  return firstLines.includes('/**') && firstLines.includes('*/')
+function hasJSDocHeader(content, filename) {
+  return hasFileLevelJSDoc(content, filename)
 }
 
 async function resolveDirectory(input) {
@@ -67,7 +67,7 @@ async function findMissingHeaders(scanRoot) {
       }
 
       const content = await fs.readFile(filePath, 'utf-8')
-      if (!hasJSDocHeader(content)) {
+      if (!hasJSDocHeader(content, entry.name)) {
         missing.push(path.relative(scanRoot, filePath))
       }
     }
