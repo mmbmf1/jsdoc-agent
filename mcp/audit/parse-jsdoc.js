@@ -33,3 +33,14 @@ export function parseJSDocBlock(comment) {
   const blocks = parseComment(source)
   return blocks[0] ?? null
 }
+
+/**
+ * @param {import('@babel/types').Node | null | undefined} outerNode - Export wrapper node, if any.
+ * @param {import('@babel/types').Node | null | undefined} innerNode - Declared symbol node.
+ * @returns {import('comment-parser').Block | null} Parsed JSDoc attached to the symbol.
+ */
+export function getParsedJSDoc(outerNode, innerNode) {
+  const comment =
+    getJSDocComment(outerNode) ?? getJSDocComment(innerNode)
+  return comment ? parseJSDocBlock(comment) : null
+}
