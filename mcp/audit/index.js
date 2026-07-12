@@ -38,4 +38,5 @@ export {
 export { getJSDocComment, parseJSDocBlock, getParsedJSDoc } from './parse-jsdoc.js'
 export { buildReport, formatReportTable } from './build-report.js'
 export { formatHybridAuditResponse, buildFixSuggestionPrompt } from './format-response.js'
+export { hasFileLevelJSDoc } from './file-header.js'
 export { evaluateDocumentable } from './rules/completeness.js'
