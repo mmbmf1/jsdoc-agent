@@ -7,6 +7,7 @@ This project is a specification-first system for mastering and enforcing JSDoc s
 - /agent/rules/docs-completeness.md: Canonical completeness requirements.
 - /agent/skills/spec-compliance-skill.md: Audit workflow and report format.
 - /mcp/server.js: MCP server entrypoint (stdio transport).
+- /mcp/audit/: Deterministic AST parsing and completeness scoring.
 
 ## Core Pillars
 1. Tags: Documentation of all JSDoc tags.
