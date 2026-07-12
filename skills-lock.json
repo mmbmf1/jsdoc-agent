@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "deslop": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "cursor-team-kit/skills/deslop/SKILL.md",
+      "computedHash": "8883a7d459c07a0b2ee06972e79baa634009aa3bab969a6650acbefac394ad41"
+    },
+    "naming-conventions": {
+      "source": "mmbmf1/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/naming-conventions/SKILL.md",
+      "computedHash": "7b80e83e2a1fc4d21c638c30f5215c01b2bb2777593118c219d0cad98d1eee8e"
+    }
+  }
+}

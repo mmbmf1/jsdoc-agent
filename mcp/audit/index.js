@@ -12,12 +12,12 @@ import { extractDocumentables } from './extract-documentables.js'
  * @param {string} filePath - Absolute path to a `.js` or `.ts` file.
  * @returns {Promise<import('./extract-documentables.js').Documentable[]>} Extracted symbols.
  */
-export async function listDocumentables(filePath) {
+export async function loadDocumentables(filePath) {
   const content = await fs.readFile(filePath, 'utf-8')
   const ast = parseSource(content, path.basename(filePath))
   return extractDocumentables(ast)
 }
 
 export { parseSource } from './parse-source.js'
-export { extractDocumentables, extractParamNames, detectMayThrow } from './extract-documentables.js'
+export { extractDocumentables, extractParamNames, detectThrowsRequirement } from './extract-documentables.js'
 export { getJSDocComment, parseJSDocBlock, getParsedJSDoc } from './parse-jsdoc.js'
