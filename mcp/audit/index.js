@@ -21,3 +21,4 @@ export async function loadDocumentables(filePath) {
 export { parseSource } from './parse-source.js'
 export { extractDocumentables, extractParamNames, detectThrowsRequirement } from './extract-documentables.js'
 export { getJSDocComment, parseJSDocBlock, getParsedJSDoc } from './parse-jsdoc.js'
+export { evaluateCompliance } from './evaluate-compliance.js'

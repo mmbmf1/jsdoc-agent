@@ -9,118 +9,55 @@ import { z } from 'zod'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { hasFileLevelJSDoc } from './audit/file-header.js'
+import { loadDocumentables, evaluateCompliance } from './audit/index.js'
+import { findMissingHeaders, resolveDirectory } from './audit/fs-utils.js'
+import { formatAuditResponse } from './format-audit-response.js'
+import { loadContentSpecs } from './load-content-specs.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const AGENT_DIR = path.resolve(__dirname, '../agent')
+const AGENT_DIR = path.resolve(__dirname, '../.agents')
 const AGENT_FILES = {
   completeness: path.join(AGENT_DIR, 'rules/docs-completeness.md'),
-  skill: path.join(AGENT_DIR, 'skills/spec-compliance-skill.md'),
+  skill: path.join(AGENT_DIR, 'skills/spec-compliance/SKILL.md'),
 }
 
-const SOURCE_FILE = /\.(js|ts)$/
-const SKIP_DIRS = new Set(['node_modules', '.git'])
-
-/**
- * Resolves a user-supplied directory path to an absolute, existing directory.
- * Tries the path as-is, resolved, cwd-relative, and home-relative variants.
- * @param {string} input - Directory path (absolute, relative, or `~/...`).
- * @returns {Promise<string>} Absolute path to the resolved directory.
- * @throws {Error} When no candidate path exists or is a directory.
- */
-async function resolveDirectory(input) {
-  const expanded = input.replace(/^~\//, `${process.env.HOME}/`)
-  const candidates = [
-    expanded,
-    path.resolve(expanded),
-    path.resolve(process.cwd(), expanded),
-    path.resolve(process.env.HOME || '', expanded),
-  ]
-
-  for (const candidate of candidates) {
-    try {
-      if ((await fs.stat(candidate)).isDirectory()) {
-        return candidate
-      }
-    } catch {
-      // not found at this path, try the next candidate
-    }
-  }
-
-  throw new Error(`Directory not found: ${input}`)
-}
-
-/**
- * Recursively scans a directory tree for `.js`/`.ts` files missing a file-level JSDoc header.
- * Skips `node_modules` and `.git`.
- * @param {string} scanRoot - Absolute root directory to scan.
- * @returns {Promise<string[]>} Relative paths of files missing headers.
- * @throws {Error} When directory reads fail (e.g. permission denied).
- */
-async function findMissingHeaders(scanRoot) {
-  const missingHeaderPaths = []
-
-  async function walk(directory) {
-    const entries = await fs.readdir(directory, { withFileTypes: true })
-
-    for (const entry of entries) {
-      const filePath = path.join(directory, entry.name)
-
-      if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) {
-          await walk(filePath)
-        }
-        continue
-      }
-
-      if (!SOURCE_FILE.test(entry.name)) {
-        continue
-      }
-
-      const content = await fs.readFile(filePath, 'utf-8')
-      if (!hasFileLevelJSDoc(content, entry.name)) {
-        missingHeaderPaths.push(path.relative(scanRoot, filePath))
-      }
-    }
-  }
-
-  await walk(scanRoot)
-  return missingHeaderPaths
-}
-
-// 1. Initialize the Server
 const server = new McpServer({
   name: 'jsdoc-audit-server',
   version: '1.0.0',
 })
 
-// 2. Register your 'jsdoc_audit' tool
 server.registerTool(
   'jsdoc_audit',
   {
     description:
-      'Audits JSDoc in a given file using docs-completeness.md (rules) and spec-compliance-skill.md (workflow).',
+      'Audits JSDoc in a file with a deterministic structural report, content specs, rules, and workflow.',
     inputSchema: {
       filePath: z.string().describe('The absolute path to the file to audit'),
     },
   },
   async ({ filePath }) => {
     try {
-      // 1. Read the file requested by the user
-      const targetContent = await fs.readFile(filePath, 'utf-8')
+      const [targetContent, documentables, ruleContent, skillContent, contentSpecs] =
+        await Promise.all([
+          fs.readFile(filePath, 'utf-8'),
+          loadDocumentables(filePath),
+          fs.readFile(AGENT_FILES.completeness, 'utf-8'),
+          fs.readFile(AGENT_FILES.skill, 'utf-8'),
+          loadContentSpecs(),
+        ])
 
-      const [ruleContent, skillContent] = await Promise.all([
-        fs.readFile(AGENT_FILES.completeness, 'utf-8'),
-        fs.readFile(AGENT_FILES.skill, 'utf-8'),
-      ])
+      const report = evaluateCompliance(documentables)
+      const text = formatAuditResponse(
+        report,
+        ruleContent,
+        contentSpecs,
+        skillContent,
+        targetContent
+      )
 
       return {
-        content: [
-          {
-            type: 'text',
-            text: `--- RULE SET ---\n${ruleContent}\n\n--- AUDIT WORKFLOW ---\n${skillContent}\n\n--- TARGET CODE ---\n${targetContent}\n\nPlease audit the Target Code using the Rule Set and Audit Workflow above.`,
-          },
-        ],
+        content: [{ type: 'text', text }],
       }
     } catch (error) {
       return {
@@ -164,7 +101,6 @@ server.registerTool(
   }
 )
 
-// 3. Start the Server
 const transport = new StdioServerTransport()
 await server.connect(transport)
 
