@@ -11,7 +11,7 @@ import { getParsedJSDoc } from './parse-jsdoc.js'
  * @property {number} line - 1-based source line.
  * @property {string[]} params - Expected parameter names from the signature.
  * @property {import('comment-parser').Block | null} jsdoc - Parsed JSDoc block, if any.
- * @property {boolean} mayThrow - Whether a @throws tag is required by heuristics.
+ * @property {boolean} requiresThrowsTag - Whether a @throws tag is required by heuristics.
  */
 
 /**
@@ -74,26 +74,26 @@ function collectParamNames(param, names) {
  * @param {import('@babel/types').Node | null | undefined} body - Function or method body.
  * @returns {boolean} True when heuristics suggest `@throws` is required.
  */
-export function detectMayThrow(body) {
+export function detectThrowsRequirement(body) {
   if (!body) {
     return false
   }
 
   /** @type {boolean} */
-  let mayThrow = false
+  let requiresThrowsTag = false
 
   walkNode(body, (node) => {
-    if (mayThrow) {
+    if (requiresThrowsTag) {
       return
     }
 
     if (node.type === 'ThrowStatement') {
-      mayThrow = true
+      requiresThrowsTag = true
       return
     }
 
     if (node.type === 'AwaitExpression') {
-      mayThrow = true
+      requiresThrowsTag = true
       return
     }
 
@@ -103,11 +103,11 @@ export function detectMayThrow(body) {
       node.callee.property.type === 'Identifier' &&
       node.callee.property.name === 'reject'
     ) {
-      mayThrow = true
+      requiresThrowsTag = true
     }
   })
 
-  return mayThrow
+  return requiresThrowsTag
 }
 
 /**
@@ -239,7 +239,7 @@ function addClassDocumentables(outerNode, classNode, documentables) {
     line: classNode.loc?.start.line ?? 1,
     params: [],
     jsdoc: getParsedJSDoc(outerNode, classNode),
-    mayThrow: false,
+    requiresThrowsTag: false,
   })
 
   for (const member of classNode.body.body) {
@@ -268,7 +268,7 @@ function addClassDocumentables(outerNode, classNode, documentables) {
       line: member.loc?.start.line ?? 1,
       params: extractParamNames(member.params),
       jsdoc: getParsedJSDoc(null, member),
-      mayThrow: detectMayThrow(member.body),
+      requiresThrowsTag: detectThrowsRequirement(member.body),
     })
   }
 }
@@ -293,6 +293,6 @@ function addFunctionDocumentable(
     line: functionNode.loc?.start.line ?? 1,
     params: extractParamNames(functionNode.params),
     jsdoc: getParsedJSDoc(outerNode, functionNode),
-    mayThrow: detectMayThrow(functionNode.body),
+    requiresThrowsTag: detectThrowsRequirement(functionNode.body),
   })
 }

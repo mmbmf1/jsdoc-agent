@@ -22,16 +22,6 @@ const SOURCE_FILE = /\.(js|ts)$/
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 
 /**
- * Checks whether a file has a described file-level JSDoc block.
- * @param {string} content - Raw file content to inspect.
- * @param {string} filename - File name used for parser mode selection.
- * @returns {boolean} True when a described file-level JSDoc block is attached to the file.
- */
-function hasJSDocHeader(content, filename) {
-  return hasFileLevelJSDoc(content, filename)
-}
-
-/**
  * Resolves a user-supplied directory path to an absolute, existing directory.
  * Tries the path as-is, resolved, cwd-relative, and home-relative variants.
  * @param {string} input - Directory path (absolute, relative, or `~/...`).
@@ -68,7 +58,7 @@ async function resolveDirectory(input) {
  * @throws {Error} When directory reads fail (e.g. permission denied).
  */
 async function findMissingHeaders(scanRoot) {
-  const missing = []
+  const missingHeaderPaths = []
 
   async function walk(directory) {
     const entries = await fs.readdir(directory, { withFileTypes: true })
@@ -88,14 +78,14 @@ async function findMissingHeaders(scanRoot) {
       }
 
       const content = await fs.readFile(filePath, 'utf-8')
-      if (!hasJSDocHeader(content, entry.name)) {
-        missing.push(path.relative(scanRoot, filePath))
+      if (!hasFileLevelJSDoc(content, entry.name)) {
+        missingHeaderPaths.push(path.relative(scanRoot, filePath))
       }
     }
   }
 
   await walk(scanRoot)
-  return missing
+  return missingHeaderPaths
 }
 
 // 1. Initialize the Server
@@ -153,14 +143,14 @@ server.registerTool(
   async ({ directory }) => {
     try {
       const scanRoot = await resolveDirectory(directory)
-      const missing = await findMissingHeaders(scanRoot)
+      const missingHeaderPaths = await findMissingHeaders(scanRoot)
 
       return {
         content: [
           {
             type: 'text',
-            text: missing.length
-              ? `Files missing JSDoc headers:\n${missing.join('\n')}`
+            text: missingHeaderPaths.length
+              ? `Files missing JSDoc headers:\n${missingHeaderPaths.join('\n')}`
               : 'No files missing JSDoc headers.',
           },
         ],
