@@ -37,4 +37,5 @@ export {
 } from './extract-documentables.js'
 export { getJSDocComment, parseJSDocBlock, getParsedJSDoc } from './parse-jsdoc.js'
 export { buildReport, formatReportTable } from './build-report.js'
+export { formatHybridAuditResponse, buildFixSuggestionPrompt } from './format-response.js'
 export { evaluateDocumentable } from './rules/completeness.js'
