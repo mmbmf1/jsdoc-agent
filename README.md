@@ -1,6 +1,6 @@
 # jsdoc-agent
 
-A specification-first, agent-first system for defining, enforcing, and auditing JSDoc documentation standards. The repo separates concerns into three layers: atomic specs (`content/`), agent guardrails and workflows (`agent/`), and a local MCP server (`mcp/`) that connects those standards to your codebase.
+A specification-first, agent-first system for defining, enforcing, and auditing JSDoc documentation standards. The repo separates concerns into three layers: atomic specs (`content/`), agent guardrails and workflows (`.agents/`), and a local MCP server (`mcp/`) that connects those standards to your codebase.
 
 ## How it fits together
 
@@ -13,9 +13,9 @@ flowchart TB
     generics[generics/]
   end
 
-  subgraph agent [agent/ - Guardrails and Workflows]
+  subgraph agents [.agents/ - Guardrails and Workflows]
     rules[rules/docs-completeness.md]
-    skills[skills/spec-compliance-skill.md]
+    skills[skills/spec-compliance/SKILL.md]
   end
 
   subgraph mcp [mcp/ - Local MCP Server]
@@ -23,8 +23,8 @@ flowchart TB
     scan[find_files_needing_docs tool]
   end
 
-  content --> agent
-  agent --> mcp
+  content --> mcp
+  agents --> mcp
   mcp -->|"stdio transport"| client[Cursor or any MCP client]
 ```
 
@@ -33,8 +33,8 @@ flowchart TB
 | Path | Purpose |
 | --- | --- |
 | [`content/`](content/) | Atomic Markdown specs organized by pillar |
-| [`agent/rules/`](agent/rules/) | Hard requirements agents must enforce |
-| [`agent/skills/`](agent/skills/) | Step-by-step audit and report workflows |
+| [`.agents/rules/`](.agents/rules/) | Hard requirements agents must enforce |
+| [`.agents/skills/`](.agents/skills/) | Audit and development agent workflows |
 | [`mcp/`](mcp/) | Node MCP server exposing audit and scan tools |
 | [`package.json`](package.json) | Root-level Node dependencies (MCP SDK, zod) |
 | [`llms.txt`](llms.txt) | Machine-readable project index for LLM context |
@@ -47,8 +47,8 @@ This repo is a standards and MCP package, not a conventional application. It doe
 | --- | --- |
 | `src/` / `lib/` application code | [`mcp/server.js`](mcp/server.js) — thin runtime glue only |
 | Domain/business logic | [`content/`](content/) — atomic JSDoc specs |
-| Config / policy | [`agent/rules/`](agent/rules/) — hard requirements |
-| Workflows / use cases | [`agent/skills/`](agent/skills/) — audit playbooks |
+| Config / policy | [`.agents/rules/`](.agents/rules/) — hard requirements |
+| Workflows / use cases | [`.agents/skills/`](.agents/skills/) — audit playbooks |
 | UI (`app/`, `components/`) | Not applicable — consumed by MCP clients and agents |
 
 ### Content catalog
@@ -64,10 +64,10 @@ Specs live under `content/` and are grouped into four pillars:
 
 When assisting with JSDoc, agents should:
 
-1. Load guidance from `content/` for tag, type, module, and generic conventions.
-2. Validate against [`agent/rules/docs-completeness.md`](agent/rules/docs-completeness.md) for completeness requirements.
-3. Follow [`agent/skills/spec-compliance-skill.md`](agent/skills/spec-compliance-skill.md) to produce structured compliance reports.
-4. Use the MCP tools below to pull rule sets and scan directories from a connected client.
+1. Use MCP `jsdoc_audit`, which bundles `content/` specs, rules, and workflow at runtime.
+2. Validate against [`.agents/rules/docs-completeness.md`](.agents/rules/docs-completeness.md) for completeness requirements.
+3. Follow [`.agents/skills/spec-compliance/SKILL.md`](.agents/skills/spec-compliance/SKILL.md) to present the structural audit and suggest fixes.
+4. Use `find_files_needing_docs` to scan directories for missing file-level headers.
 
 ## MCP server setup
 
@@ -102,10 +102,16 @@ Both tools are registered inline in [`mcp/server.js`](mcp/server.js). There is n
 
 | Tool | Input | What it does |
 | --- | --- | --- |
-| `jsdoc_audit` | `filePath` (absolute) | Reads the target file, [`docs-completeness.md`](agent/rules/docs-completeness.md), and [`spec-compliance-skill.md`](agent/skills/spec-compliance-skill.md), then returns a prompt bundle for the connected agent to perform the audit |
-| `find_files_needing_docs` | `directory` (absolute or `~/...`) | Recursively scans `.js` and `.ts` files (skips `node_modules`, `.git`) and lists files missing a file-level `/** ... */` header in the first 5 lines |
+| `jsdoc_audit` | `filePath` (absolute) | Runs AST extraction and deterministic structural scoring, then returns a layered response: structural audit table, [`.agents/rules/docs-completeness.md`](.agents/rules/docs-completeness.md), all 12 [`content/`](content/) specs, [`.agents/skills/spec-compliance/SKILL.md`](.agents/skills/spec-compliance/SKILL.md), and the target source |
+| `find_files_needing_docs` | `directory` (absolute or `~/...`) | Recursively scans `.js` and `.ts` files (skips `node_modules`, `.git`) and lists files missing a file-level JSDoc description in the first 3 top-level AST statements |
 
-`jsdoc_audit` delegates reasoning to the connected LLM — it does not parse AST or auto-score compliance on its own.
+`jsdoc_audit` output sections (in order):
+
+1. `--- STRUCTURAL AUDIT ---` — deterministic pass/fail table
+2. `--- RULE SET ---`
+3. `--- CONTENT SPECS ---`
+4. `--- AUDIT WORKFLOW ---`
+5. `--- TARGET CODE ---`
 
 Example prompts:
 
@@ -115,5 +121,6 @@ Example prompts:
 ## Development
 
 - Requires Node.js with ESM support (`"type": "module"` in [`package.json`](package.json)).
+- Run tests with `npm test`.
 - Markdown and JS formatting uses [`.prettierrc`](.prettierrc).
-- To extend the system: add spec files under `content/`, update rules and skills under `agent/`, and register new tools in [`mcp/server.js`](mcp/server.js).
+- To extend the system: add spec files under `content/`, update rules and skills under `.agents/`, and register new tools in [`mcp/server.js`](mcp/server.js).

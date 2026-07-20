@@ -4,8 +4,8 @@ This project is a specification-first system for mastering and enforcing JSDoc s
 
 ## Project Structure
 - /content: Atomic Markdown pillars (The Specs).
-- /agent/rules/docs-completeness.md: Canonical completeness requirements.
-- /agent/skills/spec-compliance-skill.md: Audit workflow and report format.
+- /.agents/rules/docs-completeness.md: Canonical completeness requirements.
+- /.agents/skills/spec-compliance/SKILL.md: Audit workflow and report format.
 - /mcp/server.js: MCP server entrypoint (stdio transport).
 
 ## Core Pillars
@@ -15,4 +15,4 @@ This project is a specification-first system for mastering and enforcing JSDoc s
 4. Generics: Template usage standards.
 
 ## Agent Instructions
-When assisting with JSDoc, prioritize the content found in /content, validate against /agent/rules/docs-completeness.md, and follow the workflow in /agent/skills/spec-compliance-skill.md.
+When assisting with JSDoc, use MCP jsdoc_audit (which bundles /content specs at runtime), validate against /.agents/rules/docs-completeness.md, and follow /.agents/skills/spec-compliance/SKILL.md.
